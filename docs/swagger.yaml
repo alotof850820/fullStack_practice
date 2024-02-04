@@ -1,0 +1,92 @@
+info:
+  contact: {}
+paths:
+  /index:
+    get:
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      tags:
+      - 首頁
+  /user/createUser:
+    get:
+      parameters:
+      - description: 用戶名
+        in: query
+        name: name
+        type: string
+      - description: 密碼
+        in: query
+        name: password
+        type: string
+      - description: 確認密碼
+        in: query
+        name: repassword
+        type: string
+      responses:
+        "200":
+          description: 200表示成功
+          schema:
+            type: string
+      summary: 新增用戶
+      tags:
+      - 用戶
+  /user/deleteUser:
+    delete:
+      parameters:
+      - description: id
+        in: query
+        name: id
+        type: string
+      responses:
+        "200":
+          description: 200表示成功
+          schema:
+            type: string
+      summary: 刪除用戶
+      tags:
+      - 用戶
+  /user/getUserList:
+    get:
+      responses:
+        "200":
+          description: description":"wellcome"}
+          schema:
+            type: string
+      summary: 所有用戶
+      tags:
+      - 用戶
+  /user/updateUser:
+    post:
+      parameters:
+      - description: id
+        in: formData
+        name: id
+        type: string
+      - description: 用戶名
+        in: formData
+        name: name
+        type: string
+      - description: 密碼
+        in: formData
+        name: password
+        type: string
+      - description: 手機
+        in: formData
+        name: phone
+        type: string
+      - description: 郵箱
+        in: formData
+        name: email
+        type: string
+      responses:
+        "200":
+          description: 200表示成功
+          schema:
+            type: string
+      summary: 修改用戶
+      tags:
+      - 用戶
+swagger: "2.0"
