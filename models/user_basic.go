@@ -19,9 +19,10 @@ type UserBasic struct {
 	Email         string `valid:"email~請輸入正確的郵箱格式"`
 	ClientIp      string
 	ClientPort    string
-	LoginTime     time.Time
-	HeartbeatTime time.Time
-	LoginOutTime  time.Time `gorm:"column:login_out_time" json:"login_out_time"`
+	Salt          string
+	LoginTime     *time.Time
+	HeartbeatTime *time.Time
+	LoginOutTime  *time.Time `gorm:"column:login_out_time" json:"login_out_time"`
 	IsLogout      bool
 	DeviceInfo    string
 }
@@ -33,9 +34,9 @@ func (table *UserBasic) TableName() string {
 func GetUserList() []*UserBasic {
 	data := make([]*UserBasic, 10)
 	utils.DB.Find(&data) //&data 傳地址，才能夠修改切片。
-	for _, v := range data {
-		fmt.Println(v)
-	}
+	// for _, v := range data {
+	// 	fmt.Println(v)
+	// }
 	return data
 }
 
@@ -54,4 +55,30 @@ func UpdateUser(user UserBasic) *gorm.DB {
 		Phone:    user.Phone,
 		Email:    user.Email,
 	}) //&user 傳地址，才能夠修改
+}
+
+func FindUserByNameAndPassword(name string, password string) UserBasic {
+	user := UserBasic{}
+	utils.DB.Where("name = ? and password = ?", name, password).First(&user)
+
+	// token加密 更改identity
+	str := fmt.Sprintf("%d", time.Now().Unix())
+	temp := utils.MD5Encode(str)
+	utils.DB.Model(&user).Where("Id = ?", user.ID).Update("identity", temp)
+	return user
+}
+func FindUserByName(name string) UserBasic {
+	user := UserBasic{}
+	utils.DB.Where("name = ?", name).First(&user)
+	return user
+}
+
+func FindUserByPhone(phone string) *gorm.DB {
+	user := UserBasic{}
+	return utils.DB.Where("phone = ?", phone).Find(&user)
+}
+
+func FindUserByEmail(email string) *gorm.DB {
+	user := UserBasic{}
+	return utils.DB.Where("email = ?", email).Find(&user)
 }

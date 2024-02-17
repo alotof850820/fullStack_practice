@@ -79,6 +79,36 @@
                 }
             }
         },
+        "/user/findUserByNameAndPassword": {
+            "post": {
+                "tags": [
+                    "用戶"
+                ],
+                "summary": "登入",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "用戶名",
+                        "name": "name",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "密碼",
+                        "name": "password",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "code\":\"message\"}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/user/getUserList": {
             "get": {
                 "tags": [

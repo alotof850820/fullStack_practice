@@ -48,6 +48,25 @@ paths:
       summary: 刪除用戶
       tags:
       - 用戶
+  /user/findUserByNameAndPassword:
+    post:
+      parameters:
+      - description: 用戶名
+        in: query
+        name: name
+        type: string
+      - description: 密碼
+        in: query
+        name: password
+        type: string
+      responses:
+        "200":
+          description: code":"message"}
+          schema:
+            type: string
+      summary: 登入
+      tags:
+      - 用戶
   /user/getUserList:
     get:
       responses:

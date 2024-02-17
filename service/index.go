@@ -1,13 +1,16 @@
 package service
 
-import "github.com/gin-gonic/gin"
+import (
+	"html/template"
 
-// GetIndex
+	"github.com/gin-gonic/gin"
+)
+
+// GetVueHtml
 // @Tags 首頁
 // @Success 200 {string} wellcome
 // @Router /index [get]
-func GetIndex(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"message": "wellcome",
-	})
+func GetVueHtml(c *gin.Context) {
+	ind := template.Must(template.ParseFiles("./views/index.html"))
+	ind.Execute(c.Writer, "index")
 }

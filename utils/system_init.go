@@ -1,11 +1,13 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -22,7 +24,28 @@ func InitConfig() {
 	fmt.Println("設定config")
 }
 
-var DB *gorm.DB
+var (
+	DB  *gorm.DB
+	Red *redis.Client
+)
+
+func InitRedis() {
+	// 取出數據DB 利用viper拿環境變數
+	Red = redis.NewClient(&redis.Options{
+		Addr:         viper.GetString("redis.addr"),
+		Password:     viper.GetString("redis.password"),
+		DB:           viper.GetInt("redis.db"),
+		PoolSize:     viper.GetInt("redis.pool_size"),
+		MinIdleConns: viper.GetInt("redis.min_idle_conns"),
+	})
+	pong, err := Red.Ping(context.Background()).Result()
+	if err != nil {
+		fmt.Println("redis連線失敗.....", err)
+	} else {
+		fmt.Println("redis連線成功.....", pong)
+	}
+
+}
 
 func InitMySQL() {
 	// 自訂義日誌(vscode) log SQL語句
@@ -42,4 +65,20 @@ func InitMySQL() {
 	// user := &models.UserBasic{}
 	// DB.Find(user)
 	// fmt.Println(user)
+}
+
+const (
+	PublishKey = "websocket"
+)
+
+// Publish 發佈到redis
+func Publish(ctx context.Context, channel string, message string) error {
+	return Red.Publish(ctx, channel, message).Err()
+}
+
+// Subscribe 訂閱redis
+func Subscribe(ctx context.Context, channel string) (string, error) {
+	sub := Red.Subscribe(ctx, channel)
+	msg, err := sub.ReceiveMessage(ctx)
+	return msg.Payload, err
 }
