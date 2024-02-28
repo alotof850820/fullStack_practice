@@ -4,11 +4,13 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { goBack } from '@/router'
+import { GIF } from '@/assets/gif'
 
 const route = useRoute()
 
 const user = useUserStore()
 
+const showGif = ref<boolean>(false)
 const allMessage = ref<any[]>([])
 const newMessage = ref<string>('')
 const socket = ref<WebSocket | null>(null)
@@ -49,6 +51,20 @@ const closeWebSocket = () => {
     socket.value = null
   }
 }
+const sendGif = (url: string) => {
+  if (socket.value && socket.value.readyState === WebSocket.OPEN) {
+    const data = {
+      TargetId: +route.params.id, //接收者
+      Type: 1, //消息類型 群聊 私聊 廣播
+      Media: 4, //消息類型 文字 圖片 音訊
+      userId: user.userData.ID, //发送者
+      Content: newMessage.value, //消息內容
+      url: url
+    }
+    socket.value.send(JSON.stringify(data))
+    showGif.value = false
+  }
+}
 
 // 在组件挂载时打开 WebSocket 连接
 onMounted(() => {
@@ -76,14 +92,27 @@ onBeforeUnmount(() => {
         class="message"
         :class="{ right: msg.userId !== user.userData.ID, left: msg.userId === user.userData.ID }"
       >
-        <span>{{ msg.userId === user.userData.ID ? '我' : route.params.name }}:</span>
-        {{ msg.Content }}
+        <span> {{ msg.userId === user.userData.ID ? '我' : route.params.name }}: </span>
+        <span> {{ msg.Content }}</span>
+        <img v-show="msg.Media === 4" :src="`${msg.url}`" alt="" />
       </div>
     </div>
-
-    <div class="input-box">
-      <input v-model="newMessage" @keyup.enter="sendMessage" placeholder="Type your message..." />
-      <button @click="sendMessage">Send</button>
+    <div>
+      <div v-show="showGif" class="gif_box">
+        <img
+          @click="sendGif(gif)"
+          class="img"
+          v-for="(gif, index) in GIF"
+          :key="index"
+          :src="gif"
+          alt=""
+        />
+      </div>
+      <div class="input-box">
+        <Icon @click="showGif = !showGif" class="gif" icon="ant-design:smile-outlined" />
+        <input v-model="newMessage" @keyup.enter="sendMessage" placeholder="Type your message..." />
+        <button @click="sendMessage">Send</button>
+      </div>
     </div>
   </div>
 </template>
@@ -122,15 +151,23 @@ onBeforeUnmount(() => {
     }
 
     .message {
-      padding: 5px;
-      margin-bottom: 5px;
+      padding: 1vw;
+      margin-bottom: 1vw;
+      font-size: 4vw;
+      display: flex;
+      align-items: center;
 
       &.left {
-        text-align: end;
+        justify-content: flex-end;
       }
 
       &.right {
-        text-align: start;
+        justify-content: flex-start;
+      }
+
+      img {
+        width: 4vw;
+        height: 4vw;
       }
     }
   }
@@ -140,6 +177,7 @@ onBeforeUnmount(() => {
     align-items: center;
     padding: 2vw;
     background-color: #f1f1f1;
+    gap: 2vw;
 
     input {
       flex: 1;
@@ -152,6 +190,20 @@ onBeforeUnmount(() => {
       background-color: #4caf50;
       color: white;
       border: none;
+      cursor: pointer;
+    }
+    .gif {
+      cursor: pointer;
+    }
+  }
+  .gif_box {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 1vw;
+    gap: 1vw;
+    .img {
+      width: 4vw;
+      height: 4vw;
       cursor: pointer;
     }
   }
