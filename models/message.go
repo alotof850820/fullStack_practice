@@ -83,6 +83,7 @@ func Chat(writer http.ResponseWriter, request *http.Request) {
 	go sendProc(node)
 	// 6. 完成接受發送邏輯
 	go recvProc(node)
+
 	sendMsg(userId, []byte("欢迎进入聊天室"))
 }
 
@@ -90,6 +91,7 @@ func sendProc(node *Node) {
 	for { // 不断监听通道并发送数据。
 		select { // 用于监听多个通道的操作。 在这里，只监听 node.DateQueue 这一个通道。
 		case data := <-node.DateQueue: // DateQueue有数据可读时，将数据赋值给 data。
+			fmt.Println("[ws] send>>>>>>msg:", string(data))
 			err := node.Conn.WriteMessage(websocket.TextMessage, data) //发送给客户端。
 			if err != nil {
 				fmt.Println(err)
@@ -106,8 +108,10 @@ func recvProc(node *Node) {
 			fmt.Println(err)
 			return
 		}
+
 		broadMsg(data)
 		node.DateQueue <- data // 将数据写入通道
+		fmt.Println("[ws] recv <<<<<< msg:", string(data))
 	}
 }
 
@@ -121,6 +125,7 @@ func broadMsg(data []byte) {
 func init() {
 	go udpSendProc()
 	go udpRecvProc()
+	fmt.Println("init go")
 }
 
 // 完成udp数据发送协程
@@ -140,6 +145,7 @@ func udpSendProc() {
 	for {
 		select {
 		case data := <-udpsendChan:
+			fmt.Println("[ws] udpSendProc data:", string(data))
 			// 通过 UDP 连接发送数据到指定的 IP 地址和端口
 			_, err := con.Write(data)
 			if err != nil {
@@ -167,11 +173,13 @@ func udpRecvProc() {
 	for {
 		// 从 UDP 连接 con 中读取所有数据，将读取的数据存储到 buf 中。
 		var buf [512]byte
+
 		n, err := con.Read(buf[0:])
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
+		fmt.Println("[ws] udpRecvProc data:", string(buf[0:n]))
 		// 参数是实际读取到的数据。
 		dispatch(buf[0:n])
 	}
@@ -187,6 +195,7 @@ func dispatch(data []byte) {
 	}
 	switch msg.Type {
 	case 1: // 私聊
+		fmt.Println("[ws] dispatch data:", string(data))
 		sendMsg(msg.TargetId, data)
 		// case 2: // 群聊
 		// 	sendGroupMsg(msg)
@@ -199,6 +208,7 @@ func dispatch(data []byte) {
 
 // 确保向用户发送消息时不会受到其他 goroutine 的影响。
 func sendMsg(userId int64, msg []byte) {
+	fmt.Println("[ws] sendMsg userId:", userId, "msg:", string(msg))
 	//通过读取锁确保在查找用户信息时其他 goroutine 不会修改 clientMap。
 	rwLocker.RLock() //使用读取锁，多个 goroutine 可同时读取 clientMap 而不会互斥。
 	node, ok := clientMap[userId]

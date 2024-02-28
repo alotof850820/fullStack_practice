@@ -1,8 +1,23 @@
 import axios from 'axios'
 import qs from 'qs'
 
-axios.interceptors.request.use(
+const jsonHttp = axios.create()
+const formHttp = axios.create()
+
+formHttp.interceptors.request.use(
   (config) => {
+    // 放ngrok的網址
+    config.baseURL = 'http://127.0.0.1:8081/'
+    config.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  }
+)
+jsonHttp.interceptors.request.use(
+  (config) => {
+    // 放ngrok的網址
     config.baseURL = 'http://127.0.0.1:8081/'
     config.headers['Content-Type'] = 'application/json'
     return config
@@ -14,10 +29,14 @@ axios.interceptors.request.use(
 
 export const apiPostlogin = (data: any) => {
   const queryString = qs.stringify(data)
-  return axios.post(`user/findUserByNameAndPassword?${queryString}`)
+  return jsonHttp.post(`user/findUserByNameAndPassword?${queryString}`)
 }
 
 export const apiPostRegister = (data: any) => {
   const queryString = qs.stringify(data)
-  return axios.get(`user/createUser?${queryString}`)
+  return jsonHttp.get(`user/createUser?${queryString}`)
+}
+
+export const apiPostSearchFriends = (data: any) => {
+  return formHttp.post(`searchFriends`, data)
 }

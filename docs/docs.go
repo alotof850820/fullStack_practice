@@ -30,6 +30,31 @@ const docTemplate = `{
                 }
             }
         },
+        "/searchFriends": {
+            "post": {
+                "description": "通過用戶 ID 搜尋朋友",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "用戶"
+                ],
+                "summary": "搜尋朋友",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "用戶 ID",
+                        "name": "userId",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/user/createUser": {
             "get": {
                 "tags": [

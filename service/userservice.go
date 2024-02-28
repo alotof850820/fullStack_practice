@@ -51,7 +51,7 @@ func FindUserByNameAndPassword(c *gin.Context) {
 		c.JSON(-1, gin.H{
 			"code":    -1,
 			"message": "查無此用戶",
-			"data":    data,
+			"data":    user,
 		})
 		return
 	}
@@ -62,12 +62,17 @@ func FindUserByNameAndPassword(c *gin.Context) {
 		c.JSON(-1, gin.H{
 			"code":    -1,
 			"message": "密碼錯誤",
-			"data":    data,
+			"data":    user,
 		})
 		return
 	}
 	pwd := utils.MakePassword(password, user.Salt)
 	data = models.FindUserByNameAndPassword(name, pwd)
+
+	//拿用戶信息 驗證token
+	user.ID = data.ID
+	// user.Identity
+
 	c.JSON(200, gin.H{
 		"code":    200, // -1 失敗
 		"message": "登入成功",
@@ -95,11 +100,20 @@ func CreateUser(c *gin.Context) {
 	salt := fmt.Sprintf("%06d", rand.Int31())
 
 	data := models.FindUserByName(user.Name)
+	if data.Name == "" || password == "" || repassword == "" {
+		c.JSON(-1, gin.H{
+			"code":    -1,
+			"message": "用戶名子或密碼不得為空",
+			"data":    user,
+		})
+		return
+	}
+
 	if data.Name != "" {
 		c.JSON(-1, gin.H{
 			"code":    -1,
 			"message": "用戶名子已存在",
-			"data":    data,
+			"data":    user,
 		})
 		return
 	}
@@ -108,7 +122,7 @@ func CreateUser(c *gin.Context) {
 		c.JSON(-1, gin.H{
 			"code":    -1,
 			"message": "密碼不一致",
-			"data":    data,
+			"data":    user,
 		})
 		return
 	}
@@ -124,7 +138,7 @@ func CreateUser(c *gin.Context) {
 		c.JSON(-1, gin.H{
 			"message": "新增用戶失敗",
 			"error":   result.Error.Error(),
-			"data":    data,
+			"data":    user,
 		})
 		return
 	}
@@ -229,4 +243,18 @@ func MsgHandler(ws *websocket.Conn, c *gin.Context) {
 
 func SendUserMsg(c *gin.Context) {
 	models.Chat(c.Writer, c.Request)
+}
+
+// SearchFriends godoc
+// @Summary 搜尋朋友
+// @Description 通過用戶 ID 搜尋朋友
+// @Tags 用戶
+// @Accept json
+// @Produce json
+// @Param userId formData int true "用戶 ID"
+// @Router /searchFriends [post]
+func SearchFriends(c *gin.Context) {
+	userId, _ := strconv.Atoi(c.Request.FormValue("userId"))
+	users := models.SearchFriends(uint(userId))
+	utils.RespOKList(c.Writer, users, len(users))
 }

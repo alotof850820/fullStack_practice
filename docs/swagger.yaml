@@ -10,6 +10,23 @@ paths:
             type: string
       tags:
       - 首頁
+  /searchFriends:
+    post:
+      consumes:
+      - application/json
+      description: 通過用戶 ID 搜尋朋友
+      parameters:
+      - description: 用戶 ID
+        in: formData
+        name: userId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses: {}
+      summary: 搜尋朋友
+      tags:
+      - 用戶
   /user/createUser:
     get:
       parameters:
