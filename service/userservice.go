@@ -258,3 +258,15 @@ func SearchFriends(c *gin.Context) {
 	users := models.SearchFriends(uint(userId))
 	utils.RespOKList(c.Writer, users, len(users))
 }
+
+func AddFriend(c *gin.Context) {
+	userId, _ := strconv.Atoi(c.Request.FormValue("userId"))
+	targetId, _ := strconv.Atoi(c.Request.FormValue("targetId"))
+	code, msg := models.AddFriend(uint(userId), uint(targetId))
+	if code == 200 {
+		utils.RespOK(c.Writer, msg, code)
+	} else {
+		utils.RespFail(c.Writer, msg)
+	}
+
+}

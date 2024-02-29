@@ -82,3 +82,9 @@ func FindUserByEmail(email string) *gorm.DB {
 	user := UserBasic{}
 	return utils.DB.Where("email = ?", email).Find(&user)
 }
+
+func FindByID(id uint) UserBasic {
+	user := UserBasic{}
+	utils.DB.Where("id = ?", id).First(&user)
+	return user
+}

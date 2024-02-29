@@ -5,17 +5,20 @@ import { useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { goBack } from '@/router'
 import { GIF } from '@/assets/gif'
+import { apiPostUploadImg } from '@/api'
 
 const route = useRoute()
 
 const user = useUserStore()
 
 const showGif = ref<boolean>(false)
+const showUpload = ref<boolean>(false)
+const imgInput = ref<HTMLInputElement | null>(null)
 const allMessage = ref<any[]>([])
 const newMessage = ref<string>('')
 const socket = ref<WebSocket | null>(null)
 const enterMsg = ref<string>('')
-const socketUrl = `ws://127.0.0.1:8081/user/sendUserMsg?userId=${user.userData.ID}&token=${user.userData.Identity}`
+const socketUrl = `ws://127.0.0.1:8081/user/sendUserMsg?userId=${user.userData.ID}&token=`
 
 const sendMessage = () => {
   if (socket.value && socket.value.readyState === WebSocket.OPEN) {
@@ -24,7 +27,8 @@ const sendMessage = () => {
       Type: 1, //消息類型 群聊 私聊 廣播
       Media: 1, //消息類型 文字 圖片 音訊
       userId: user.userData.ID, //发送者
-      Content: newMessage.value //消息內容
+      Content: newMessage.value, //消息內容
+      Url: ''
     }
     socket.value.send(JSON.stringify(data))
   }
@@ -59,11 +63,39 @@ const sendGif = (url: string) => {
       Media: 4, //消息類型 文字 圖片 音訊
       userId: user.userData.ID, //发送者
       Content: newMessage.value, //消息內容
-      url: url
+      Url: url
     }
     socket.value.send(JSON.stringify(data))
     showGif.value = false
   }
+}
+const uploadImg = () => {
+  // showUpload.value = !showUpload.value
+  imgInput.value?.click()
+}
+const handleFileChange = (event: any) => {
+  const formData = new FormData()
+
+  // 将选择的文件添加到 FormData 中
+  const file = event.target?.files[0]
+  formData.append('file', file)
+  apiPostUploadImg(formData)
+    .then((res) => {
+      // ./assets/upload/17091291611076632673.png
+      const data = {
+        TargetId: +route.params.id, //接收者
+        Type: 1, //消息類型 群聊 私聊 廣播
+        Media: 2, //消息類型 文字 圖片 音訊 gif
+        userId: user.userData.ID, //发送者
+        Content: newMessage.value, //消息內容
+        url: res.data.Data
+      }
+      socket.value?.send(JSON.stringify(data))
+      showUpload.value = false
+    })
+    .catch((error) => {
+      console.error(error)
+    })
 }
 
 // 在组件挂载时打开 WebSocket 连接
@@ -95,6 +127,7 @@ onBeforeUnmount(() => {
         <span> {{ msg.userId === user.userData.ID ? '我' : route.params.name }}: </span>
         <span> {{ msg.Content }}</span>
         <img v-show="msg.Media === 4" :src="`${msg.url}`" alt="" />
+        <img class="img" v-show="msg.Media === 2" :src="`${msg.url}`" alt="" />
       </div>
     </div>
     <div>
@@ -108,8 +141,13 @@ onBeforeUnmount(() => {
           alt=""
         />
       </div>
+      <div v-show="showUpload" class="upload_box">
+        <Icon @click="uploadImg" class="upload" icon="material-symbols:image-outline" />
+        <input ref="imgInput" type="file" style="display: none" @change="handleFileChange" />
+      </div>
       <div class="input-box">
         <Icon @click="showGif = !showGif" class="gif" icon="ant-design:smile-outlined" />
+        <Icon @click="showUpload = !showUpload" class="gif" icon="icons8:plus" />
         <input v-model="newMessage" @keyup.enter="sendMessage" placeholder="Type your message..." />
         <button @click="sendMessage">Send</button>
       </div>
@@ -169,6 +207,11 @@ onBeforeUnmount(() => {
         width: 4vw;
         height: 4vw;
       }
+      .img {
+        width: 40vw;
+        height: auto;
+        object-fit: cover;
+      }
     }
   }
 
@@ -205,6 +248,17 @@ onBeforeUnmount(() => {
       width: 4vw;
       height: 4vw;
       cursor: pointer;
+    }
+  }
+  .upload_box {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 1vw;
+    gap: 1vw;
+    .upload {
+      cursor: pointer;
+      width: 4vw;
+      height: 4vw;
     }
   }
 }

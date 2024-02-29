@@ -132,7 +132,7 @@ func init() {
 func udpSendProc() {
 	// 创建 UDP 连接
 	con, err := net.DialUDP("udp", nil, &net.UDPAddr{
-		IP:   net.IPv4(192, 168, 1, 102),
+		IP:   net.IPv4(192, 168, 12, 1),
 		Port: 3000,
 	})
 
@@ -179,7 +179,6 @@ func udpRecvProc() {
 			fmt.Println(err)
 			return
 		}
-		fmt.Println("[ws] udpRecvProc data:", string(buf[0:n]))
 		// 参数是实际读取到的数据。
 		dispatch(buf[0:n])
 	}

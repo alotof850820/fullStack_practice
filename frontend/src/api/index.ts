@@ -40,3 +40,11 @@ export const apiPostRegister = (data: any) => {
 export const apiPostSearchFriends = (data: any) => {
   return formHttp.post(`searchFriends`, data)
 }
+
+export const apiPostUploadImg = (data: any) => {
+  return formHttp.post(`attach/upload`, data)
+}
+
+export const apiPostaddFriend = (data: any) => {
+  return formHttp.post(`contact/addFriend`, data)
+}

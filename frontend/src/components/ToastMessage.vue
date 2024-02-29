@@ -19,7 +19,7 @@ const toast = useToastStore()
   color: #fff;
   border-radius: 5px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  z-index: 9999;
+  z-index: 99999999;
   font-size: 3vw;
 }
 </style>
