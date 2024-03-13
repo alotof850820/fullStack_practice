@@ -1,30 +1,37 @@
 package models
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"ginchat/utils"
 	"net"
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/fatih/set"
+	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/websocket"
+	"github.com/spf13/viper"
 	"gorm.io/gorm"
 )
 
 // 消息
 type Message struct {
 	gorm.Model
-	FormId   int64  //發送者
-	TargetId int64  //接收者
-	Type     int    //消息類型 群聊 私聊 廣播
-	Media    int    //消息類型 文字 圖片 音訊
-	Content  string //消息內容
-	Url      string //文件地址
-	Pic      string //圖片地址
-	Desc     string //描述
-	Amount   int    //其他數字統計
+	UserId     int64  //發送者
+	TargetId   int64  //接收者
+	Type       int    //消息類型 群聊 私聊 廣播
+	Media      int    //消息類型 文字 圖片 音訊
+	Content    string //消息內容
+	Url        string //文件地址
+	Pic        string //圖片地址
+	Desc       string //描述
+	Amount     int    //其他數字統計
+	CreateTime uint64
+	ReadTime   uint64 //讀取時間
 }
 
 func (table *Message) TableName() string {
@@ -33,9 +40,13 @@ func (table *Message) TableName() string {
 
 // WebSocket 连接的节点
 type Node struct {
-	Conn      *websocket.Conn
-	DateQueue chan []byte   // 用于在节点之间传递数据。 传递的数据是字节数组
-	GroupSets set.Interface // 表示该节点所属的群组集合。
+	Conn          *websocket.Conn
+	DateQueue     chan []byte   // 用于在节点之间传递数据。 传递数据是字节数组
+	GroupSets     set.Interface // 好友/群聊
+	Addr          string        //客戶端的地址
+	FirstTime     int64         //首次连接时间
+	HeartbeatTime uint64        //心跳时间
+	LoginTime     uint64        //登录时间
 }
 
 // 映射關係 0开始时没有分配内存。
@@ -133,7 +144,7 @@ func udpSendProc() {
 	// 创建 UDP 连接
 	con, err := net.DialUDP("udp", nil, &net.UDPAddr{
 		IP:   net.IPv4(192, 168, 12, 1),
-		Port: 3000,
+		Port: viper.GetInt("port.udpport"),
 	})
 
 	if err != nil {
@@ -161,7 +172,7 @@ func udpRecvProc() {
 	// 创建 UDP 连接
 	con, err := net.ListenUDP("udp", &net.UDPAddr{
 		IP:   net.IPv4zero,
-		Port: 3000,
+		Port: viper.GetInt("port.udpport"),
 	})
 
 	if err != nil {
@@ -187,6 +198,7 @@ func udpRecvProc() {
 // 後端調度邏輯處理
 func dispatch(data []byte) {
 	msg := Message{}
+	msg.CreateTime = uint64(time.Now().Unix())
 	err := json.Unmarshal(data, &msg) // 接收JSON 的 UDP 数据 data 解析成 msg 变量。
 	if err != nil {
 		fmt.Println(err)
@@ -196,8 +208,8 @@ func dispatch(data []byte) {
 	case 1: // 私聊
 		fmt.Println("[ws] dispatch data:", string(data))
 		sendMsg(msg.TargetId, data)
-		// case 2: // 群聊
-		// 	sendGroupMsg(msg)
+	case 2: // 群聊
+		sendGroupMsg(msg.TargetId, data)
 		// case 3: // 广播
 		// 	sendAllMsg(msg)
 		// case 4:
@@ -212,7 +224,121 @@ func sendMsg(userId int64, msg []byte) {
 	rwLocker.RLock() //使用读取锁，多个 goroutine 可同时读取 clientMap 而不会互斥。
 	node, ok := clientMap[userId]
 	rwLocker.RUnlock()
-	if ok {
-		node.DateQueue <- msg
+	jsonMsg := Message{}
+	json.Unmarshal(msg, &jsonMsg)
+	ctx := context.Background()
+	targetIdStr := strconv.Itoa(int(userId))
+	userIdStr := strconv.Itoa(int(jsonMsg.UserId))
+	jsonMsg.CreateTime = uint64(time.Now().Unix())
+	r, err := utils.Red.Get(ctx, "online_"+userIdStr).Result()
+	if err != nil {
+		fmt.Println(err) // 沒有在redis裡面
 	}
+	if r != "" {
+		if ok {
+			fmt.Println("[red] sendMsg userId:", userId, "msg:", string(msg))
+			node.DateQueue <- msg
+		}
+	}
+
+	var key string
+	if userId > jsonMsg.UserId {
+		key = "msg_" + userIdStr + "_" + targetIdStr
+	} else {
+		key = "msg_" + targetIdStr + "_" + userIdStr
+	}
+	// 案時間排序
+	res, err := utils.Red.ZRevRange(ctx, key, 0, -1).Result()
+	if err != nil {
+		fmt.Println(err)
+	}
+	score := float64(cap(res)) + 1
+	response, e := utils.Red.ZAdd(ctx, key, &redis.Z{Score: score, Member: msg}).Result() //jsonMsg
+	if e != nil {
+		fmt.Println(e)
+	}
+	fmt.Println(response)
+}
+
+// 需要重寫才能將msg轉成byte[]
+func (msg Message) MarshalBinary() ([]byte, error) {
+	return json.Marshal(msg)
+}
+
+// 獲取緩存中的數據
+func RedisMsg(userIdA int64, userIdB int64, start int64, end int64, isRev bool) []string {
+	rwLocker.RLock()
+	// node, ok := clientMap[userIdA]
+	rwLocker.RUnlock()
+	// jsonMsg := Message{}
+	// json.Unmarshal(msg, &jsonMsg)
+	ctx := context.Background()
+	userIdStr := strconv.Itoa(int(userIdA))
+	targetIdStr := strconv.Itoa(int(userIdB))
+
+	var key string
+
+	if userIdA > userIdB {
+		key = "msg_" + targetIdStr + "_" + userIdStr
+	} else {
+		key = "msg_" + userIdStr + "_" + targetIdStr
+	}
+
+	var r []string
+	var err error
+	if isRev {
+		r, err = utils.Red.ZRange(ctx, key, start, end).Result()
+	} else {
+		r, err = utils.Red.ZRevRange(ctx, key, start, end).Result()
+	}
+
+	// r, err := utils.Red.ZRevRange(ctx, key, 0, 10).Result()
+	if err != nil {
+		fmt.Println(err) // 沒有在redis裡面
+	}
+
+	// for _, v := range r {
+	// 	fmt.Println("[red] sendMsg userId:", userIdA, "msg:", v)
+	// 	nodeA.DateQueue <- []byte(v)
+	// }
+	return r
+
+}
+
+func JoinGroup(userId uint, groupId string) (int, string) {
+	contact := Contact{
+		OwnerId: userId,
+		// TargetId: groupId,
+		Type: 2,
+	}
+	community := Community{}
+
+	utils.DB.Where("id=? or name = ?", groupId, groupId).Find(&community)
+	if community.Name == "" {
+		return -1, "群不存在"
+	}
+
+	utils.DB.Where("owner_id=? and target_id=? and type = 2", userId, groupId).Find(&contact)
+	if !contact.CreatedAt.IsZero() {
+		return -1, "已經在群組裡了"
+	} else {
+		contact.TargetId = community.ID
+		utils.DB.Create(&contact)
+		return 200, "成功加入群組"
+	}
+}
+
+func sendGroupMsg(groupId int64, msg []byte) {
+	//
+}
+
+// 更新用戶心跳
+func (node *Node) Heartbeat(currentTime uint64) {
+	node.HeartbeatTime = currentTime
+	return
+}
+
+// 清理超時連接
+func CleanConnection(param interface{}) (result bool) {
+	return true
 }

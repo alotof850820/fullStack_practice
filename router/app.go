@@ -39,5 +39,12 @@ func Router() *gin.Engine {
 	r.POST("/attach/upload", service.Upload)
 	r.POST("/contact/addFriend", service.AddFriend)
 
+	// 群組
+	r.POST("/contact/createCommunity", service.CreateCommunity)
+	r.POST("/contact/loadCommunity", service.LoadCommunity)
+	r.POST("/contact/joinGroup", service.JoinGroup)
+
+	r.POST("/user/redisMsg", service.RedisMsg)
+
 	return r
 }

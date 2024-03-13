@@ -1,18 +1,28 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { apiPostSearchFriends } from '@/api'
 import { useUserStore } from '@/stores/user'
 import { Icon } from '@iconify/vue'
 import { go } from '@/router'
-import { apiPostaddFriend } from '@/api'
 import { useToastStore } from '@/stores/toast'
+import {
+  apiPostCreateGroup,
+  apiPostLoadGroup,
+  apiPostaddFriend,
+  apiPostSearchFriends,
+  apiPostJoinGroup
+} from '@/api'
 
 const user = useUserStore()
 const toast = useToastStore()
 
 const tab = ref<number>(0)
 const showModal = ref<boolean>(false)
+const showCreateGroupModal = ref<boolean>(false)
+const showAddGroup = ref<boolean>(false)
 const friendId = ref<number>(0)
+const groupId = ref<number>(0)
+const groupName = ref<string>('')
+const groupDescription = ref<string>('')
 
 const searchFriends = () => {
   const userId = user.userData.ID
@@ -27,7 +37,7 @@ const setTab = (type: number) => {
   if (type === 0) {
     searchFriends()
   } else if (type === 1) {
-    //
+    loadGroups()
   } else if (type === 2) {
     //
   }
@@ -53,12 +63,50 @@ const addFriend = () => {
       toast.showToast(err)
     })
 }
+const createGroup = () => {
+  apiPostCreateGroup({
+    name: groupName.value,
+    description: groupDescription.value,
+    ownerId: user.userData.ID
+  })
+    .then((res: any) => {
+      toast.showToast(res.data.Msg)
+      showCreateGroupModal.value = false
+    })
+    .catch((err: any) => {
+      toast.showToast(err)
+    })
+}
+const loadGroups = () => {
+  apiPostLoadGroup({
+    ownerId: user.userData.ID
+  })
+    .then((res: any) => {
+      user.groups = res.data.Data
+    })
+    .catch((err: any) => {
+      toast.showToast(err)
+    })
+}
+const addGroup = () => {
+  apiPostJoinGroup({
+    userId: user.userData.ID,
+    groupId: groupId.value
+  })
+    .then((res: any) => {
+      toast.showToast(res.data.Msg)
+      showAddGroup.value = false
+    })
+    .catch((err: any) => {
+      toast.showToast(err)
+    })
+}
 setTab(0)
 </script>
 
 <template>
   <div class="chat-room">
-    <div class="title">聯絡人</div>
+    <div class="title">{{ tab === 0 ? '好友' : tab === 1 ? '群組' : '個人中心' }}</div>
     <div v-if="tab === 0" class="contact_box">
       <div
         class="friend"
@@ -71,9 +119,22 @@ setTab(0)
         <Icon icon="flowbite:angle-right-outline" />
       </div>
     </div>
-    <div v-if="tab === 1" class="contact_box"></div>
-    <div v-if="tab === 2" class="contact_box" @click="showModal = true">
-      <div class="list_box">添加好友</div>
+    <div v-if="tab === 1" class="contact_box">
+      <div
+        class="friend"
+        v-for="item in user.groups"
+        :key="item.ID"
+        @click="go('ChatRoom', { id: item.ID, name: item.Name })"
+      >
+        <img class="avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="" />
+        <div class="name">{{ item.Name }}({{ item.ID }})</div>
+        <Icon icon="flowbite:angle-right-outline" />
+      </div>
+    </div>
+    <div v-if="tab === 2" class="contact_box">
+      <div class="list_box" @click="showModal = true">添加好友</div>
+      <div class="list_box" @click="showCreateGroupModal = true">建立群組</div>
+      <div class="list_box" @click="showAddGroup = true">加入群組</div>
     </div>
 
     <div class="tabs">
@@ -89,6 +150,31 @@ setTab(0)
         <label for="friendId">好友ID:</label>
         <input v-model="friendId" type="text" id="friendId" placeholder="请输入好友ID" />
         <button @click="addFriend">添加</button>
+      </div>
+    </div>
+
+    <div v-if="showCreateGroupModal" class="modal">
+      <div class="modal-content">
+        <span @click="showCreateGroupModal = false" class="close">&times;</span>
+        <h2>建立群组</h2>
+        <form @submit.prevent="createGroup">
+          <label for="groupName">群组名称:</label>
+          <input v-model="groupName" type="text" id="groupName" required />
+
+          <label for="groupDescription">介绍:</label>
+          <textarea v-model="groupDescription" id="groupDescription" rows="4"></textarea>
+
+          <button type="submit">建立</button>
+        </form>
+      </div>
+    </div>
+
+    <div v-if="showAddGroup" class="modal">
+      <div class="modal-content">
+        <span class="close" @click="showAddGroup = false">&times;</span>
+        <label for="friendId">群號ID:</label>
+        <input v-model="groupId" type="text" id="friendId" placeholder="请输入群ID" />
+        <button @click="addGroup">添加</button>
       </div>
     </div>
   </div>

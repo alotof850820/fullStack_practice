@@ -4,6 +4,8 @@ package main
 import (
 	"ginchat/router"
 	"ginchat/utils"
+
+	"github.com/spf13/viper"
 )
 
 func main() {
@@ -13,5 +15,9 @@ func main() {
 	r := router.Router() //
 	// 啟動 Gin 伺服器，監聽並在 0.0.0.0:8081 上提供服務
 
-	r.Run(":8081")
+	r.Run(viper.GetString("port.server"))
 }
+
+// func InitTimer() {
+// 	utils.Timer(time.Duration(viper.GetInt("timeout.DelayHeartbeat"))*time.Second, time.Duration(viper.GetInt("timeout.Heartbeat"))*time.Second)
+// }

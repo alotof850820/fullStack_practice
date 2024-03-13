@@ -4,6 +4,7 @@ import { defineStore } from 'pinia'
 export const useUserStore = defineStore('user', () => {
   const userData = ref(JSON.parse(localStorage.getItem('user') || '{}'))
   const friends = ref<any>([])
+  const groups = ref<any>([])
 
-  return { userData, friends }
+  return { userData, friends, groups }
 })

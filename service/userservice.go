@@ -184,6 +184,7 @@ func UpdateUser(c *gin.Context) {
 	user.Name = c.PostForm("name")
 	user.Password = c.PostForm("password")
 	user.Phone = c.PostForm("phone")
+	user.Avatar = c.PostForm("Avatar")
 	user.Email = c.PostForm("email")
 
 	_, err := govalidator.ValidateStruct(user)
@@ -268,5 +269,55 @@ func AddFriend(c *gin.Context) {
 	} else {
 		utils.RespFail(c.Writer, msg)
 	}
+}
 
+func CreateCommunity(c *gin.Context) {
+	ownerId, _ := strconv.Atoi(c.Request.FormValue("ownerId"))
+	name := c.Request.FormValue("name")
+	icon := c.Request.FormValue("icon")
+	desc := c.Request.FormValue("desc")
+	community := models.Community{
+		Name:    name,
+		OwnerId: uint(ownerId),
+		Img:     icon,
+		Desc:    desc,
+	}
+
+	code, msg := models.CreateCommunity(community)
+	if code == 200 {
+		utils.RespOK(c.Writer, msg, code)
+	} else {
+		utils.RespFail(c.Writer, msg)
+	}
+}
+
+func LoadCommunity(c *gin.Context) {
+	ownerId, _ := strconv.Atoi(c.Request.FormValue("ownerId"))
+	data, msg := models.LoadCommunity(uint(ownerId))
+	if len(data) != 0 {
+		utils.RespList(c.Writer, 200, data, len(data))
+	} else {
+		utils.RespFail(c.Writer, msg)
+	}
+}
+func JoinGroup(c *gin.Context) {
+	userId, _ := strconv.Atoi(c.Request.FormValue("userId"))
+	groupId := c.Request.FormValue("groupId")
+
+	code, msg := models.JoinGroup(uint(userId), groupId)
+	if code == 200 {
+		utils.RespOK(c.Writer, msg, code)
+	} else {
+		utils.RespFail(c.Writer, msg)
+	}
+}
+
+func RedisMsg(c *gin.Context) {
+	userIdA, _ := strconv.Atoi(c.PostForm("userIdA"))
+	userIdB, _ := strconv.Atoi(c.PostForm("userIdB"))
+	start, _ := strconv.Atoi(c.PostForm("start"))
+	end, _ := strconv.Atoi(c.PostForm("end"))
+	isRev, _ := strconv.ParseBool(c.PostForm("isRev"))
+	res := models.RedisMsg(int64(userIdA), int64(userIdB), int64(start), int64(end), isRev)
+	utils.RespOKList(c.Writer, res, len(res))
 }

@@ -48,3 +48,12 @@ export const apiPostUploadImg = (data: any) => {
 export const apiPostaddFriend = (data: any) => {
   return formHttp.post(`contact/addFriend`, data)
 }
+export const apiPostCreateGroup = (data: any) => {
+  return formHttp.post(`contact/createCommunity`, data)
+}
+export const apiPostLoadGroup = (data: any) => {
+  return formHttp.post(`contact/loadCommunity`, data)
+}
+export const apiPostJoinGroup = (data: any) => {
+  return formHttp.post(`contact/joinGroup`, data)
+}
