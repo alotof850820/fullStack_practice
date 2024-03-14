@@ -14,6 +14,7 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: "1.17" # 指定 Go 版本
+          path: ./ginchat
 
       - name: Check out code # 检出代码
         uses: actions/checkout@v2
