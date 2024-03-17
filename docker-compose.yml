@@ -1,0 +1,33 @@
+# version: "3"
+# services:
+#   mysql:
+#     image: mysql:latest
+#     environment:
+#       MYSQL_ALLOW_EMPTY_PASSWORD: "true"
+#       MYSQL_DATABASE: test
+#     ports:
+#       - "3306:3306"
+#   app:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile
+#     ports:
+#       - "8081:8081"
+#     depends_on:
+#       - mysql
+
+version: "3"
+services:
+  mysql:
+    image: mysql:latest
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
+      MYSQL_DATABASE: test
+    ports:
+      - "3306:3306"
+  app:
+    image: jfhsdjhjfg/ginchat_last
+    ports:
+      - "8081:8081"
+    depends_on:
+      - mysql

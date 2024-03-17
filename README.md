@@ -1,9 +1,5 @@
-new golang Api for my frontend vue
+執行
+docker compose up (可只 clone docker-compose.yml)可能需要執行第二次才可成功(第一次沒成功請按 control+c 後再執行 docker compose up)
 
-1.在 main.go 使用 IDE 啟動 go server
-
-2.在至 frontend 資料夾 輸入 npm run dev 啟動 vue
-
-3.開兩個頁面再登入頁面輸入帳號(我是 9 號 和 我是 10 號)密碼(111111 和 111111)登入
-
-4.可互動聊天
+運行
+於遊覽器中輸入 http://localhost:8081

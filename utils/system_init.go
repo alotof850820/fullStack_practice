@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"fmt"
+	"ginchat/sql"
 	"log"
 	"os"
 	"time"
@@ -65,6 +66,62 @@ func InitMySQL() {
 	// user := &models.UserBasic{}
 	// DB.Find(user)
 	// fmt.Println(user)
+
+	// 检查表是否存在
+	hasUserBasic := DB.Migrator().HasTable(&sql.UserBasic{})
+	if !hasUserBasic {
+		// 如果表不存在，则自动创建表
+		if err := DB.AutoMigrate(&sql.UserBasic{}); err != nil {
+			panic("创建用户表失败：" + err.Error())
+		}
+		fmt.Println("成功创建用户表")
+	} else {
+		fmt.Println("用户表已存在，跳过创建")
+	}
+
+	hasComunity := DB.Migrator().HasTable(&sql.Community{})
+	if !hasComunity {
+		// 如果表不存在，则自动创建表
+		if err := DB.AutoMigrate(&sql.Community{}); err != nil {
+			panic("创建社群表失败：" + err.Error())
+		}
+		fmt.Println("成功创建社群表")
+	} else {
+		fmt.Println("社群表已存在，跳过创建")
+	}
+
+	hasGroupBasic := DB.Migrator().HasTable(&sql.GroupBasic{})
+	if !hasGroupBasic {
+		// 如果表不存在，则自动创建表
+		if err := DB.AutoMigrate(&sql.GroupBasic{}); err != nil {
+			panic("创建群聊表失败：" + err.Error())
+		}
+		fmt.Println("成功创建群聊表")
+	} else {
+		fmt.Println("群聊表已存在，跳过创建")
+	}
+
+	hasMessage := DB.Migrator().HasTable(&sql.Message{})
+	if !hasMessage {
+		// 如果表不存在，则自动创建表
+		if err := DB.AutoMigrate(&sql.Message{}); err != nil {
+			panic("创建消息表失败：" + err.Error())
+		}
+		fmt.Println("成功创建消息表")
+	} else {
+		fmt.Println("消息表已存在，跳过创建")
+	}
+
+	hasContact := DB.Migrator().HasTable(&sql.Contact{})
+	if !hasContact {
+		// 如果表不存在，则自动创建表
+		if err := DB.AutoMigrate(&sql.Contact{}); err != nil {
+			panic("创建联系人表失败：" + err.Error())
+		}
+		fmt.Println("成功创建联系人表")
+	} else {
+		fmt.Println("联系人表已存在，跳过创建")
+	}
 }
 
 const (

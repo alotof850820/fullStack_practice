@@ -30,7 +30,7 @@ const router = createRouter({
   ]
 })
 
-export const go = (name: string, params: any) => {
+export const go = (name: string, params?: any) => {
   router.push({ name, params })
 }
 export const goBack = () => {
